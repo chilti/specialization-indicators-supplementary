@@ -1,0 +1,26 @@
+%%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#f4f4f4', 'primaryTextColor': '#333', 'lineColor': '#555', 'edgeLabelBackground':'#f4f4f4', 'clusterBkg': '#fafafa'}}}%%
+graph TD
+    subgraph "Domains Comparison
+    (Local Context)"
+        direction TB
+
+        subgraph " "
+            AI[Activity Index]
+            FM[F-Measure]
+        end
+        
+        subgraph "Constituent Shares"
+            DShareC["DShareC </br> (Internal Effort)"]
+            CShareD["CShareD </br> (Global Share)"]
+        end
+
+        AI == "Rank-Equivalence" ==> CShareD
+        AI -. "Variable Correlation </br> (Modulated by Country Size)" .-> DShareC
+        FM -- "Strong Correlation </br> (Modulated by Country Size)" --> DShareC        
+        FM -. "Variable Correlation </br> (Modulated by Country Size)" .-> CShareD
+    end
+    
+    style AI fill:#E3F2FD,stroke:#333,stroke-width:2px
+    style FM fill:#E3F2FD,stroke:#333,stroke-width:2px
+    style DShareC fill:#E8F5E9,stroke:#333,stroke-width:2px
+    style CShareD fill:#E8F5E9,stroke:#333,stroke-width:2px
