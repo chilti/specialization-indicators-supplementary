@@ -63,10 +63,28 @@ For both InCites and OpenAlex datasets:
 
 ## Interactive & Pre-rendered Results (HTML Reports)
 
-For readers who wish to explore our findings without running the Python notebooks, we have provided pre-rendered HTML reports under each analysis context (e.g., inside `All_Documents/` and `Citable_Documents/`, within the `InCites` and `OpenAlex` folders):
+For readers who wish to explore our findings without running the Python notebooks, we have provided pre-rendered HTML reports under each analysis context. You can access the interactive visualizations directly through the links below:
 
-*   **`manuscriptFiguresAndTables.html`**: A compiled document presenting styled tables of the Pearson and Spearman correlation matrices across all ESI fields (for InCites) or OpenAlex fields. These tables are styled with color heatmaps, allowing quick inspection of indicator relationships.
-*   **`scatterplots.html`**: An HTML index page linking to interactive, high-resolution scatter plots (e.g., `scatterplots/scatterPlots_2024.0.html`). These plots allow readers to hover over data points to identify individual countries or fields, display exact values, zoom into dense regions, and visually investigate rank distortions and dominance effects in detail.
+### 1. Total Publications (All Documents)
+*   **InCites (ESI Schema)**:
+    *   **Global Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/InCites/Global%20Context/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/InCites/Global%20Context/scatterplots.html)
+    *   **Local Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/InCites/Local%20Context/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/InCites/Local%20Context/scatterplots.html)
+*   **OpenAlex (ASJC Schema)**:
+    *   **Global Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/OpenAlex/GlobalContext/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/OpenAlex/GlobalContext/scatterplots.html)
+    *   **Local Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/OpenAlex/LocalContext/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/All_Documents/OpenAlex/LocalContext/scatterplots.html)
+
+### 2. Citable Documents
+*   **InCites (ESI Schema)**:
+    *   **Global Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/InCites/Global%20Context/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/InCites/Global%20Context/scatterplots.html)
+    *   **Local Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/InCites/Local%20Context/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/InCites/Local%20Context/scatterplots.html)
+*   **OpenAlex (ASJC Schema)**:
+    *   **Global Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/OpenAlex/GlobalContext/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/OpenAlex/GlobalContext/scatterplots.html)
+    *   **Local Context**: [Figures & Tables Heatmaps](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/OpenAlex/LocalContext/manuscriptFiguresAndTables.html) | [Interactive Scatter Plots](https://chilti.github.io/specialization-indicators-supplementary/Citable_Documents/OpenAlex/LocalContext/scatterplots.html)
+
+---
+
+*   **`manuscriptFiguresAndTables.html`** files contain styled correlation matrix heatmaps (Pearson and Spearman) across ESI/ASJC fields.
+*   **`scatterplots.html`** pages act as indexes linking to dynamic plots where readers can hover over data points to identify countries/fields, display exact values, zoom, and visually examine rank distortions or dominance effects.
 
 ---
 
