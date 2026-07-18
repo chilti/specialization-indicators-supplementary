@@ -1,7 +1,6 @@
 %%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#f4f4f4', 'primaryTextColor': '#333', 'lineColor': '#555', 'edgeLabelBackground':'#f4f4f4', 'clusterBkg': '#fafafa'}}}%%
 graph TD
-    subgraph "Domains Comparison
-    (Local Context)"
+    subgraph "Domains Comparison"
         direction TB
 
         subgraph " "
@@ -10,14 +9,14 @@ graph TD
         end
         
         subgraph "Constituent Shares"
-            DShareC["DShareC </br> (Internal Effort)"]
-            CShareD["CShareD </br> (Global Share)"]
+            DShareC["DShareC"]
+            CShareD["CShareD)"]
         end
 
         AI == "Rank-Equivalence" ==> CShareD
-        AI -. "Variable Correlation </br> (Modulated by Country Size)" .-> DShareC
-        FM -- "Strong Correlation </br> (Modulated by Country Size)" --> DShareC        
-        FM -. "Variable Correlation </br> (Modulated by Country Size)" .-> CShareD
+        AI -. "Size-dependent" .-> DShareC
+        FM -- "Size-dependent" --> DShareC        
+        FM -. "Size-dependent" .-> CShareD
     end
     
     style AI fill:#E3F2FD,stroke:#333,stroke-width:2px
