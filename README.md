@@ -88,8 +88,10 @@ For readers who wish to explore our findings without running the Python notebook
 ---
 
 *   **`manuscriptFiguresAndTables.html`** files contain styled correlation matrix heatmaps (Pearson and Spearman) across ESI/ASJC fields.
-*   **`All_vs_Citable Documents.html`** files contain comparative correlation tables and visualization plots comparing the results obtained using the total volume of publications versus citable documents.
+*   **`All_vs_Citable Documents.html`** files contain comparative correlation tables and visualization plots comparing the results obtained using the total volume of publications versus citable documents (All Documents vs. Citable Documents) across all countries.
+*   **`All_vs_100 Units.html`**, **`All_vs_50 Units.html`**, and **`50_vs_100 Units.html`** files (found in the Top 100 and Top 50 Global Context subdirectories) compare different country-size thresholds (all countries, top 100, and top 50) specifically *within* the set of citable documents, rather than comparing citable documents to total publications.
 *   **`scatterplots.html`** pages act as indexes linking to dynamic plots where readers can hover over data points to identify countries/fields, display exact values, zoom, and visually examine rank distortions or dominance effects.
+
 
 ---
 
