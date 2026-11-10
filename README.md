@@ -61,9 +61,17 @@ For both InCites and OpenAlex datasets:
 
 ---
 
-## Interactive & Pre-rendered Results (HTML Reports)
+## Interactive & Pre-rendered Results (HTML Reports & Web Application)
 
-For readers who wish to explore our findings without running the Python notebooks, we have provided pre-rendered HTML reports under each analysis context. You can access the interactive visualizations directly through the links below:
+### 🚀 Interactive Scientometric Specialization Explorer (Web App)
+*   **[Launch the Interactive OpenAlex Specialization Explorer](https://chilti.github.io/specialization-indicators-supplementary/app/)** *(Trilingual: English / Español / Português)*
+    *   **3-Level OpenAlex Hierarchy:** Explore specialization indicators across **Domains** (4 macro areas), **Fields** (26 ASJC areas), and **Subfields** (252 specialized areas), for both **All Documents** and **Citable Documents**.
+    *   **Methodological Criterion Assistant:** Automatically computes **Pearson ($r$)** and **Spearman ($\rho$)** correlations for the selected reference year and previous year under both analytical setups (**Countries Comparison** and **Domains Comparison**), explaining the structural relationships ($\text{AI}$, $\text{F-measure}$, $\text{DShareC}$, $\text{CShareD}$) according to the manuscript's framework (with optional local LLM integration via [`app/server_dinamica1.py`](app/server_dinamica1.py) and ClickHouse update pipeline in [`app/scripts/update_from_local_openalex.py`](app/scripts/update_from_local_openalex.py)).
+    *   **5×3 Longitudinal Evolution Grid & CSV Downloads:** View the 14 time-series charts (1980–2024) for any Country × Area combination and export full indicator series, rankings, and correlation tables to CSV.
+
+---
+
+For readers who wish to explore our static pre-rendered reports without running the Python notebooks, we have also provided pre-rendered HTML reports under each analysis context:
 
 ### 1. Total Publications (All Documents)
 *   **InCites (ESI Schema)**:

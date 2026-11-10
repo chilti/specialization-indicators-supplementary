@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scientometric Specialization Explorer — OpenAlex (AI, F-measure &amp; Shares)</title>
+  <meta name="description" content="Interactive scientometric explorer for Activity Index (AI), F-measure, DShareC, CShareD, and underlying components across OpenAlex Domains, Fields, and Subfields (1980–2024)." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <!-- Sticky Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <h1 id="app-title">Explorador de Indicadores de Especialización Cienciométrica — OpenAlex</h1>
+        <p id="app-subtitle">Evaluación interactiva del Índice de Actividad (AI), F-measure y sus componentes subyacentes en los 3 primeros niveles de OpenAlex (1980–2024)</p>
+      </div>
+      <div class="header-controls">
+        <div class="lang-switcher" role="group" aria-label="Language Selector">
+          <button type="button" class="lang-btn" data-lang="en" id="btn-lang-en">EN • English</button>
+          <button type="button" class="lang-btn active" data-lang="es" id="btn-lang-es">ES • Español</button>
+          <button type="button" class="lang-btn" data-lang="pt" id="btn-lang-pt">PT • Português</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- Scenario Selector Tabs -->
+    <nav class="scenario-tabs" aria-label="Analytical Scenarios">
+      <button type="button" class="scenario-tab active" data-scenario="global" id="tab-btn-global">
+        <span class="tab-badge" id="tab1-badge">Escenario 1 • Contexto Global</span>
+        <span class="tab-title" id="tab1-title">Comparación de Países (Área Fija)</span>
+        <span class="tab-desc" id="tab1-desc">Compara el nivel de especialización de múltiples países dentro de un dominio, campo o subcampo fijo</span>
+      </button>
+      <button type="button" class="scenario-tab" data-scenario="local" id="tab-btn-local">
+        <span class="tab-badge" id="tab2-badge">Escenario 2 • Contexto Local</span>
+        <span class="tab-title" id="tab2-title">Comparación de Dominios/Áreas (País Fijo)</span>
+        <span class="tab-desc" id="tab2-desc">Compara el perfil de especialización a través de múltiples áreas dentro de un país específico</span>
+      </button>
+      <button type="button" class="scenario-tab" data-scenario="evolution" id="tab-btn-evolution">
+        <span class="tab-badge" id="tab3-badge">Perfil Longitudinal • Cuadrícula 5×3</span>
+        <span class="tab-title" id="tab3-title">14 Gráficas de Evolución Temporal (País × Área)</span>
+        <span class="tab-desc" id="tab3-desc">Explora las series históricas 1980–2024 de producción, shares, AI, RSI, F-measure y otras medias</span>
+      </button>
+    </nav>
+
+    <!-- Filter & Parameter Control Bar -->
+    <section class="control-bar" aria-label="Parameters">
+      <div class="control-group">
+        <label for="select-doctype" id="lbl-doctype">Conjunto de Documentos</label>
+        <select id="select-doctype">
+          <option value="all" id="opt-doc-all">Todos los Documentos (Producción Total)</option>
+          <option value="citable" id="opt-doc-citable">Documentos Citables (Artículos, Reviews, Letters)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="select-level" id="lbl-level">Nivel de Clasificación de OpenAlex</label>
+        <select id="select-level">
+          <option value="domains" id="opt-lvl-domains">Nivel 1: Dominios (4 macroáreas)</option>
+          <option value="fields" id="opt-lvl-fields" selected>Nivel 2: Campos / Fields (26 áreas ASJC — Nivel del Artículo)</option>
+          <option value="subfields" id="opt-lvl-subfields">Nivel 3: Subcampos / Subfields (252 áreas especializadas)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="select-area" id="lbl-area">Dominio / Campo / Subcampo de Investigación</label>
+        <select id="select-area"></select>
+      </div>
+
+      <div class="control-group">
+        <label for="select-country" id="lbl-country">País / Economía</label>
+        <select id="select-country"></select>
+      </div>
+
+      <div class="control-group">
+        <label for="select-year" id="lbl-year">Año de Referencia (Año Anterior Completo)</label>
+        <select id="select-year"></select>
+      </div>
+    </section>
+
+    <!-- Methodological Criterion & Diagnostic Card -->
+    <section class="diagnostic-box" aria-labelledby="diag-header-title">
+      <div class="card-header" style="border-bottom-color: #bfdbfe;">
+        <div>
+          <h2 class="card-title" id="diag-header-title">Criterio Metodológico del Artículo</h2>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-teal" id="btn-jump-5x3">Ver Cuadrícula 5×3 de Evolución (País × Área)</button>
+          <button type="button" class="btn btn-primary" id="btn-dl-series">Descargar Series 5×3 (CSV)</button>
+          <button type="button" class="btn btn-outline" id="btn-dl-ranking">Descargar Tabla del Escenario Actual (CSV)</button>
+          <button type="button" class="btn btn-outline" id="btn-dl-correlations">Descargar Tabla General de Correlaciones (CSV)</button>
+        </div>
+      </div>
+
+      <div class="diagnostic-grid">
+        <div class="diagnostic-text" id="diagnostic-content">
+          <!-- Populated dynamically by i18n.js & app.js -->
+        </div>
+        <div class="corr-metrics-grid" id="diagnostic-metrics">
+          <!-- Correlation cards populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Optional Local LLM Interpreter Panel (dinamica1 LM Studio) -->
+      <div class="llm-panel">
+        <div class="llm-header">
+          <div>
+            <strong id="llm-panel-title">Intérprete Metodológico con IA (Modelo Local en dinamica1)</strong>
+            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+              <span class="llm-status-dot" id="llm-status-dot"></span>
+              <span id="llm-status-text">LM Studio: https://dinamica1.fciencias.unam.mx/v1 (openai/default)</span>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button type="button" class="btn btn-outline" id="btn-llm-config">Configurar Conexión a dinamica1</button>
+            <button type="button" class="btn btn-primary" id="btn-llm-generate">Generar Análisis con LLM Local</button>
+          </div>
+        </div>
+
+        <div class="llm-config-bar" id="llm-config-bar" style="display: none;">
+          <label style="font-size:0.76rem; font-weight:600;">LM Studio URL:</label>
+          <input type="text" id="input-llm-url" value="https://dinamica1.fciencias.unam.mx/v1" style="width: 280px;" />
+          <label style="font-size:0.76rem; font-weight:600;">Modelo:</label>
+          <input type="text" id="input-llm-model" value="openai/default" style="width: 140px;" />
+          <label style="font-size:0.76rem; font-weight:600;">API Key:</label>
+          <input type="password" id="input-llm-key" placeholder="sk-lm-tu-token-aqui" style="width: 210px;" />
+        </div>
+
+        <div class="llm-output" id="llm-output-box"></div>
+      </div>
+    </section>
+
+    <!-- Scenario Charts & Interactive Ranking Table -->
+    <div id="section-scenario-charts">
+      <div class="charts-row">
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-header">
+            <h3 class="card-title" id="chart-left-title">Espacio Bivariado de Componentes e Indicadores</h3>
+          </div>
+          <div id="plotly-scenario-left" class="chart-box"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:0;">
+          <div class="card-header">
+            <h3 class="card-title" id="chart-right-title">Comparación de Indicadores y Shares</h3>
+          </div>
+          <div id="plotly-scenario-right" class="chart-box"></div>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title" id="table-main-title">Ranking e Indicadores de Especialización</h3>
+            <p class="card-subtitle">Haz clic en cualquier fila para actualizar la cuadrícula 5×3 de evolución temporal de ese país o área</p>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="scenario-table">
+            <thead>
+              <tr>
+                <th>Entity / Name</th>
+                <th>Output (Ocd)</th>
+                <th>DShareC (Ocd/Oc)</th>
+                <th>CShareD (Ocd/Owd)</th>
+                <th>Activity Index (AI)</th>
+                <th>RSI</th>
+                <th>F-measure</th>
+                <th>A-measure</th>
+                <th>G-measure</th>
+                <th>GAggregation</th>
+              </tr>
+            </thead>
+            <tbody id="scenario-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 5x3 Longitudinal Evolution Grid Section -->
+    <section class="card" id="section-5x3-grid">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title" id="grid-5x3-title">Cuadrícula 5×3 de Evolución Longitudinal (1980–2024)</h2>
+          <p class="card-subtitle" id="grid-5x3-subtitle">F-measure = Media armónica de DShareC y CShareD | A-measure = Media aritmética | G-measure = Media geométrica | GAggregation = √DShareC + √CShareD</p>
+        </div>
+      </div>
+      <div id="plotly-5x3-grid" class="chart-5x3-box"></div>
+    </section>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
