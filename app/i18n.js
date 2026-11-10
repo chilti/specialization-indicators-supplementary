@@ -26,6 +26,7 @@ window.I18N = {
     diagHeaderGlobal: "Methodological Criterion (Countries Comparison — Global Context)",
     diagHeaderLocal: "Methodological Criterion (Domains Comparison — Local Context)",
     btnDownloadSeriesCSV: "Download 5×3 Time Series (CSV)",
+    btnDownloadMatrixCSV: "Download Longitudinal Matrix (Countries × Areas CSV)",
     btnDownloadRankingCSV: "Download Current Scenario Table (CSV)",
     btnDownloadCorrelationsCSV: "Download All Correlations Table (CSV)",
     btnJumpTo5x3: "View 5×3 Evolution Grid for Selected Country & Area",
@@ -40,6 +41,15 @@ window.I18N = {
     tableGlobalTitle: "Countries Ranking & Specialization Indicators in Selected Area",
     tableLocalTitle: "Research Areas Ranking & Specialization Indicators in Selected Country",
     tableCorrSummaryTitle: "Summary of Pearson (r) & Spearman (ρ) Correlations across All Entities",
+    corrWord: "Correlation",
+    spearmanLabel: "Spearman (ρ)",
+    pearsonLabel: "Pearson (r)",
+    prevYearLabel: (yr) => `Prev. (${yr}, ρ):`,
+    refTitle: "Methodological References & Article Citation",
+    refMainBadge: "Main Article",
+    refAbstractSummary: "View Abstract & Keywords",
+    refFMeasureSubtitle: "F-measure for scientific priority:",
+    refAISubtitle: "Activity Index (AI) in Latin America and the Caribbean:",
     grid5x3Title: "5×3 Longitudinal Evolution Grid (1980–2024)",
     grid5x3Subtitle: "F-measure = Harmonic mean of DShareC & CShareD | A-measure = Arithmetic mean | G-measure = Geometric mean | GAggregation = √DShareC + √CShareD",
     verdictHigh: "High Component Convergence — Single Indicator Sufficient",
@@ -91,6 +101,7 @@ window.I18N = {
     diagHeaderGlobal: "Criterio Metodológico del Artículo (Comparación de Países — Contexto Global)",
     diagHeaderLocal: "Criterio Metodológico del Artículo (Comparación de Dominios — Contexto Local)",
     btnDownloadSeriesCSV: "Descargar Series 5×3 (CSV)",
+    btnDownloadMatrixCSV: "Descargar Matriz Longitudinal Países × Áreas (CSV)",
     btnDownloadRankingCSV: "Descargar Tabla del Escenario Actual (CSV)",
     btnDownloadCorrelationsCSV: "Descargar Tabla General de Correlaciones (CSV)",
     btnJumpTo5x3: "Ver Cuadrícula 5×3 de Evolución (País × Área)",
@@ -105,6 +116,15 @@ window.I18N = {
     tableGlobalTitle: "Ranking de Países e Indicadores de Especialización en el Área Seleccionada",
     tableLocalTitle: "Ranking de Áreas e Indicadores de Especialización en el País Seleccionado",
     tableCorrSummaryTitle: "Resumen de Correlaciones de Pearson (r) y Spearman (ρ) en Todas las Entidades",
+    corrWord: "Correlación",
+    spearmanLabel: "Spearman (ρ)",
+    pearsonLabel: "Pearson (r)",
+    prevYearLabel: (yr) => `Previo (${yr}, ρ):`,
+    refTitle: "Referencias Metodológicas y Cita del Artículo",
+    refMainBadge: "Artículo Principal",
+    refAbstractSummary: "Ver Resumen (Abstract) y Palabras Clave",
+    refFMeasureSubtitle: "F-measure para prioridad científica:",
+    refAISubtitle: "Índice de Actividad (AI) en América Latina y el Caribe:",
     grid5x3Title: "Cuadrícula 5×3 de Evolución Longitudinal (1980–2024)",
     grid5x3Subtitle: "F-measure = Media armónica de DShareC y CShareD | A-measure = Media aritmética | G-measure = Media geométrica | GAggregation = √DShareC + √CShareD",
     verdictHigh: "Alta Convergencia de Componentes — Un Solo Indicador es Suficiente",
@@ -156,6 +176,7 @@ window.I18N = {
     diagHeaderGlobal: "Critério Metodológico do Artigo (Comparação de Países — Contexto Global)",
     diagHeaderLocal: "Critério Metodológico do Artigo (Comparação de Domínios — Contexto Local)",
     btnDownloadSeriesCSV: "Baixar Séries 5×3 (CSV)",
+    btnDownloadMatrixCSV: "Baixar Matriz Longitudinal Países × Áreas (CSV)",
     btnDownloadRankingCSV: "Baixar Tabela do Cenário Atual (CSV)",
     btnDownloadCorrelationsCSV: "Baixar Tabela Geral de Correlações (CSV)",
     btnJumpTo5x3: "Ver Grade 5×3 de Evolução (País × Área)",
@@ -170,6 +191,15 @@ window.I18N = {
     tableGlobalTitle: "Ranking de Países e Indicadores de Especialização na Área Selecionada",
     tableLocalTitle: "Ranking de Áreas e Indicadores de Especialização no País Selecionado",
     tableCorrSummaryTitle: "Resumo das Correlações de Pearson (r) e Spearman (ρ) em Todas as Entidades",
+    corrWord: "Correlação",
+    spearmanLabel: "Spearman (ρ)",
+    pearsonLabel: "Pearson (r)",
+    prevYearLabel: (yr) => `Anterior (${yr}, ρ):`,
+    refTitle: "Referências Metodológicas e Citação do Artigo",
+    refMainBadge: "Artigo Principal",
+    refAbstractSummary: "Ver Resumo (Abstract) e Palavras-chave",
+    refFMeasureSubtitle: "F-measure para prioridade científica:",
+    refAISubtitle: "Índice de Atividade (AI) na América Latina e Caribe:",
     grid5x3Title: "Grade 5×3 de Evolução Longitudinal (1980–2024)",
     grid5x3Subtitle: "F-measure = Média harmônica de DShareC e CShareD | A-measure = Média aritmética | G-measure = Média geométrica | GAggregation = √DShareC + √CShareD",
     verdictHigh: "Alta Convergência de Componentes — Um Único Indicador é Suficiente",
@@ -281,7 +311,7 @@ window.buildMethodologicalDiagnosis = function(lang, scenario, entityName, year,
       const p1 = `En el escenario de <strong>Comparación de Dominios/Áreas (Contexto Local)</strong> para <strong>${entityName}</strong> (año <strong>${year}</strong>, producción total $O_c = ${extraMeta.countryTotal.toLocaleString()}$ docs en ${extraMeta.nUnits} áreas activas), la inversión simétrica descrita en el artículo entra en efecto: dado que el país está fijo, la razón $O_c/O_w$ es constante para todas las áreas y el <strong>Índice de Actividad (AI) se vuelve exactamente proporcional y equivalente en rango a $\\text{CShareD}$</strong> ($r = 1.0000, \\rho = 1.0000$). Es decir, dentro de un país fijo, AI ordena las áreas según la cuota mundial que el país alcanza en cada disciplina.`;
       let p2 = "";
       if (verdictClass === "verdict-high") {
-        p2 = `<strong>Diagnóstico por Escala de Producción (${entityName}):</strong> El volumen total del país ($O_c$) supera o compite con el volumen mundial de múltiples áreas individuales ($O_{wd}$), haciendo que $\\text{DShareC} < \\text{CShareD}$ en gran parte del perfil. Por el Teorema A1, el <strong>F-measure queda gobernado por el componente menor ($\\text{DShareC}$), alcanzando $\\rho(\\text{F-measure}, \\text{DShareC}) = ${fmt(rho_FM_DShareC)}$</strong> (año previo: ${fmt(prev_FM_D)}) frente a $\\rho(\\text{F-measure}, \\text{CShareD}) = ${fmt(rho_FM_CShareD)}$. Aquí <strong>AI refleja competitividad global ($\text{CShareD}$) mientras que F-measure refleja la prioridad temática nacional ($\text{DShareC}$)</strong>.`;
+        p2 = `<strong>Diagnóstico por Escala de Producción (${entityName}):</strong> El volumen total del país ($O_c$) supera o compite con el volumen mundial de múltiples áreas individuales ($O_{wd}$), haciendo que $\\text{DShareC} < \\text{CShareD}$ en gran parte del perfil. Por el Teorema A1, el <strong>F-measure queda gobernado por el componente menor ($\\text{DShareC}$), alcanzando $\\rho(\\text{F-measure}, \\text{DShareC}) = ${fmt(rho_FM_DShareC)}$</strong> (año previo: ${fmt(prev_FM_D)}) frente a $\\rho(\\text{F-measure}, \\text{CShareD}) = ${fmt(rho_FM_CShareD)}$. Aquí <strong>AI refleja competitividad global ($\\text{CShareD}$) mientras que F-measure refleja la prioridad temática nacional ($\\text{DShareC}$)</strong>.`;
       } else if (verdictClass === "verdict-low") {
         p2 = `<strong>Diagnóstico por Escala de Producción (${entityName}):</strong> Al ser la producción total del país ($O_c$) menor que la producción mundial de las áreas ($O_{wd}$), $\\text{CShareD}$ es sistemáticamente el componente más pequeño ($\\text{CShareD} \\ll \\text{DShareC}$). En consecuencia, el <strong>F-measure sigue estrechamente a $\\text{CShareD}$ ($\\rho = ${fmt(rho_FM_CShareD)}$, año previo: ${fmt(prev_FM_C)})</strong> frente a $\\text{DShareC}$ ($\\rho = ${fmt(rho_FM_DShareC)}$). Dado que tanto AI como F-measure quedan dominados por $\\text{CShareD}$, <strong>para evaluar qué áreas prioriza internamente ${entityName} debe observarse directamente $\\text{DShareC}$</strong>.`;
       } else {
@@ -292,7 +322,7 @@ window.buildMethodologicalDiagnosis = function(lang, scenario, entityName, year,
       const p1 = `No cenário de <strong>Comparação de Domínios/Áreas (Contexto Local)</strong> para <strong>${entityName}</strong> (ano <strong>${year}</strong>, produção total $O_c = ${extraMeta.countryTotal.toLocaleString()}$ docs em ${extraMeta.nUnits} áreas ativas), ocorre a inversão simétrica demonstrada no artigo: como o país é fixo, a razão $O_c/O_w$ é constante e o <strong>Índice de Atividade (AI) torna-se linearmente proporcional e equivalente em posto a $\\text{CShareD}$</strong> ($r = 1.0000, \\rho = 1.0000$).`;
       let p2 = "";
       if (verdictClass === "verdict-high") {
-        p2 = `<strong>Diagnóstico por Escala de Produção (${entityName}):</strong> Como o volume nacional ($O_c$) é elevado frente às áreas ($O_{wd}$), $\\text{DShareC}$ torna-se o menor componente, fazendo com que o <strong>F-measure acompanhe fortemente $\\text{DShareC}$ ($\\rho = ${fmt(rho_FM_DShareC)}$, ano anterior: ${fmt(prev_FM_D)})</strong> em comparação a $\\text{CShareD}$ ($\\rho = ${fmt(rho_FM_CShareD)}$). Neste caso, <strong>AI mede participação global ($\text{CShareD}$) e F-measure reflete prioridade doméstica ($\text{DShareC}$)</strong>.`;
+        p2 = `<strong>Diagnóstico por Escala de Produção (${entityName}):</strong> Como o volume nacional ($O_c$) é elevado frente às áreas ($O_{wd}$), $\\text{DShareC}$ torna-se o menor componente, fazendo com que o <strong>F-measure acompanhe fortemente $\\text{DShareC}$ ($\\rho = ${fmt(rho_FM_DShareC)}$, ano anterior: ${fmt(prev_FM_D)})</strong> em comparação a $\\text{CShareD}$ ($\\rho = ${fmt(rho_FM_CShareD)}$). Neste caso, <strong>AI mede participação global ($\\text{CShareD}$) e F-measure reflete prioridade doméstica ($\\text{DShareC}$)</strong>.`;
       } else if (verdictClass === "verdict-low") {
         p2 = `<strong>Diagnóstico por Escala de Produção (${entityName}):</strong> Como a produção total do país ($O_c$) é menor que a produção mundial das áreas ($O_{wd}$), $\\text{CShareD} \\ll \\text{DShareC}$. Assim, o <strong>F-measure é governado por $\\text{CShareD}$ ($\\rho = ${fmt(rho_FM_CShareD)}$, ano anterior: ${fmt(prev_FM_C)})</strong>. Como tanto o AI quanto o F-measure refletem $\\text{CShareD}$, <strong>para avaliar a alocação interna de esforço de ${entityName} deve-se utilizar diretamente $\\text{DShareC}$</strong>.`;
       } else {

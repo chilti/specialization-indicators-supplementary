@@ -14,7 +14,7 @@
 (function() {
   const STATE = {
     lang: "es",
-    docType: "all",       // 'all' | 'citable'
+    docType: "citable",   // 'citable' | 'all'
     taxLevel: "fields",   // 'domains' | 'fields' | 'subfields'
     scenario: "global",   // 'global' | 'local' | 'evolution'
     selectedArea: "Agricultural and Biological Sciences",
@@ -35,6 +35,42 @@
       online: false
     }
   };
+
+  // --- Math (KaTeX) Rendering Helper ---
+  function renderMath(container) {
+    if (!container) return;
+    const render = () => {
+      if (window.renderMathInElement) {
+        try {
+          window.renderMathInElement(container, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false },
+              { left: "\\(", right: "\\)", display: false },
+              { left: "\\[", right: "\\]", display: true }
+            ],
+            throwOnError: false
+          });
+        } catch (err) {
+          console.warn("KaTeX rendering warning:", err);
+        }
+      }
+    };
+    if (window.renderMathInElement) {
+      render();
+    } else {
+      setTimeout(render, 150);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   // --- Statistical & Indicator Utilities ---
   function pearson(x, y) {
@@ -73,6 +109,14 @@
   function spearman(x, y) {
     if (x.length < 3) return NaN;
     return pearson(rankArray(x), rankArray(y));
+  }
+
+  function median(arr) {
+    if (!arr || arr.length === 0) return 0;
+    const clean = arr.filter(v => typeof v === "number" && !isNaN(v)).sort((a, b) => a - b);
+    if (clean.length === 0) return 0;
+    const mid = Math.floor(clean.length / 2);
+    return clean.length % 2 !== 0 ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
   }
 
   function calcPointIndicators(ocd, oc, owd, ow) {
@@ -195,22 +239,13 @@
       return (base.units_fields[countryCode] && base.units_fields[countryCode][areaName]) || new Array(nYears).fill(0);
     }
     if (level === "subfields" && STATE.datasets.subfields) {
-      const sfUnit = STATE.datasets.subfields.units_sf_23_24[countryCode];
-      if (!sfUnit || !sfUnit[areaName]) return new Array(nYears).fill(0);
-      const [v23, v24] = sfUnit[areaName];
-      const meta = getSubfieldMeta(areaName);
-      const parentField = meta ? meta.field : null;
-      const parentSeries = (parentField && base.units_fields[countryCode] && base.units_fields[countryCode][parentField]) || new Array(nYears).fill(0);
-      const allParent = (parentField && STATE.datasets.all.units_fields[countryCode] && STATE.datasets.all.units_fields[countryCode][parentField]) || new Array(nYears).fill(0);
-      const p23_24 = (allParent[nYears - 2] || 0) + (allParent[nYears - 1] || 0);
-      const shareInField = p23_24 > 0 ? Math.min(1.0, (v23 + v24) / p23_24) : 0.08;
-
-      return base.years.map((yr, idx) => {
-        const citRatio = (STATE.docType === "citable" && allParent[idx] > 0) ? (parentSeries[idx] / allParent[idx]) : 1.0;
-        if (yr === 2023) return Math.round(v23 * citRatio);
-        if (yr === 2024) return Math.round(v24 * citRatio);
-        return Math.round(parentSeries[idx] * shareInField);
-      });
+      const dict = STATE.docType === "citable"
+        ? (STATE.datasets.subfields.units_subfields_citable || STATE.datasets.subfields.units_subfields_full)
+        : STATE.datasets.subfields.units_subfields_full;
+      if (dict && dict[countryCode] && dict[countryCode][areaName]) {
+        return dict[countryCode][areaName];
+      }
+      return new Array(nYears).fill(0);
     }
     return new Array(nYears).fill(0);
   }
@@ -287,21 +322,21 @@
   // --- UI Initialization & Rendering ---
   async function initApp() {
     try {
-      const [taxRes, allRes, sfRes] = await Promise.all([
+      const [taxRes, allRes, citableRes, sfRes] = await Promise.all([
         fetch("data/taxonomy.json").then(r => r.json()),
         fetch("data/data_domains_fields_all.json").then(r => r.json()),
+        fetch("data/data_domains_fields_citable.json").then(r => r.json()),
         fetch("data/data_subfields.json").then(r => r.json())
       ]);
       STATE.taxonomy = taxRes.taxonomy;
       STATE.countriesMap = taxRes.countries;
       STATE.datasets.all = allRes;
+      STATE.datasets.citable = citableRes;
       STATE.datasets.subfields = sfRes;
-
-      // Lazy load citable dataset in background
-      fetch("data/data_domains_fields_citable.json")
-        .then(r => r.json())
-        .then(cit => { STATE.datasets.citable = cit; })
-        .catch(() => {});
+      const refDataset = citableRes || allRes;
+      if (refDataset && refDataset.years && refDataset.years.length > 0) {
+        STATE.refYear = refDataset.years[refDataset.years.length - 1];
+      }
 
       populateControls();
       bindEvents();
@@ -314,15 +349,22 @@
   }
 
   function populateControls() {
+    const docSel = document.getElementById("select-doctype");
+    if (docSel) docSel.value = STATE.docType;
+
     const base = getActiveBaseData();
-    // Year select (default 2024 = latest complete year)
+    const maxYear = base.years[base.years.length - 1];
+    if (!STATE.refYear || !base.years.includes(STATE.refYear)) {
+      STATE.refYear = maxYear;
+    }
+    // Year select (default = latest complete year in dataset)
     const yearSel = document.getElementById("select-year");
     yearSel.innerHTML = "";
     const yearsDesc = [...base.years].reverse();
     for (const yr of yearsDesc) {
       const opt = document.createElement("option");
       opt.value = yr;
-      opt.textContent = yr === 2024 ? `${yr} (Latest Complete)` : String(yr);
+      opt.textContent = yr === maxYear ? `${yr} (Latest Complete)` : String(yr);
       if (yr === STATE.refYear) opt.selected = true;
       yearSel.appendChild(opt);
     }
@@ -432,6 +474,10 @@
     });
 
     document.getElementById("btn-dl-series").addEventListener("click", download5x3SeriesCSV);
+    const btnDlSeriesGrid = document.getElementById("btn-dl-series-grid");
+    if (btnDlSeriesGrid) btnDlSeriesGrid.addEventListener("click", download5x3SeriesCSV);
+    const btnDlMatrixGrid = document.getElementById("btn-dl-matrix-grid");
+    if (btnDlMatrixGrid) btnDlMatrixGrid.addEventListener("click", downloadLongitudinalMatrixCSV);
     document.getElementById("btn-dl-ranking").addEventListener("click", downloadCurrentScenarioCSV);
     document.getElementById("btn-dl-correlations").addEventListener("click", downloadCorrelationsSummaryCSV);
 
@@ -446,8 +492,13 @@
 
   function updateStaticLabels() {
     const t = window.I18N[STATE.lang] || window.I18N.en;
+    const base = getActiveBaseData();
+    const startYear = base && base.years && base.years.length > 0 ? base.years[0] : 1980;
+    const endYear = base && base.years && base.years.length > 0 ? base.years[base.years.length - 1] : 2025;
+    const yearRange = `${startYear}–${endYear}`;
+
     document.getElementById("app-title").textContent = t.appTitle;
-    document.getElementById("app-subtitle").textContent = t.appSubtitle;
+    document.getElementById("app-subtitle").textContent = (t.appSubtitle || "").replace(/1980[–-]2024/g, yearRange);
     document.getElementById("lbl-doctype").textContent = t.lblDocType;
     document.getElementById("opt-doc-all").textContent = t.docAll;
     document.getElementById("opt-doc-citable").textContent = t.docCitable;
@@ -469,27 +520,90 @@
 
     document.getElementById("tab3-badge").textContent = t.tabEvolutionBadge;
     document.getElementById("tab3-title").textContent = t.tabEvolutionTitle;
-    document.getElementById("tab3-desc").textContent = t.tabEvolutionDesc;
+    document.getElementById("tab3-desc").textContent = (t.tabEvolutionDesc || "").replace(/1980[–-]2024/g, yearRange);
 
     document.getElementById("btn-dl-series").textContent = t.btnDownloadSeriesCSV;
+    const btnDlSeriesGrid = document.getElementById("btn-dl-series-grid");
+    if (btnDlSeriesGrid) btnDlSeriesGrid.textContent = t.btnDownloadSeriesCSV;
+    const btnDlMatrixGrid = document.getElementById("btn-dl-matrix-grid");
+    if (btnDlMatrixGrid) btnDlMatrixGrid.textContent = t.btnDownloadMatrixCSV;
     document.getElementById("btn-dl-ranking").textContent = t.btnDownloadRankingCSV;
     document.getElementById("btn-dl-correlations").textContent = t.btnDownloadCorrelationsCSV;
-    document.getElementById("btn-jump-5x3").textContent = t.btnJumpTo5x3;
+    
+    const jumpBtn = document.getElementById("btn-jump-5x3");
+    if (jumpBtn) {
+      if (STATE.scenario === "global") {
+        const cName = getCountryName(STATE.selectedCountry);
+        jumpBtn.textContent = STATE.lang === "es"
+          ? `Ver evolución 5×3 de ${cName}`
+          : (STATE.lang === "pt" ? `Ver evolução 5×3 de ${cName}` : `View 5×3 evolution for ${cName}`);
+      } else if (STATE.scenario === "local") {
+        jumpBtn.textContent = STATE.lang === "es"
+          ? `Ver evolución 5×3 de ${STATE.selectedArea}`
+          : (STATE.lang === "pt" ? `Ver evolução 5×3 de ${STATE.selectedArea}` : `View 5×3 evolution for ${STATE.selectedArea}`);
+      } else {
+        jumpBtn.textContent = t.btnJumpTo5x3;
+      }
+    }
+
+    const refTitle = document.getElementById("lbl-references-title");
+    if (refTitle && t.refTitle) refTitle.textContent = t.refTitle;
+    const refBadge = document.getElementById("lbl-ref-main-badge");
+    if (refBadge && t.refMainBadge) refBadge.textContent = t.refMainBadge;
+    const refAbs = document.getElementById("lbl-ref-abstract-summary");
+    if (refAbs && t.refAbstractSummary) refAbs.textContent = t.refAbstractSummary;
+    const refFSub = document.getElementById("lbl-ref-f-sub");
+    if (refFSub && t.refFMeasureSubtitle) refFSub.textContent = t.refFMeasureSubtitle;
+    const refAISub = document.getElementById("lbl-ref-ai-sub");
+    if (refAISub && t.refAISubtitle) refAISub.textContent = t.refAISubtitle;
 
     document.getElementById("llm-panel-title").textContent = t.llmPanelTitle;
     document.getElementById("btn-llm-generate").textContent = t.llmBtnGenerate;
     document.getElementById("btn-llm-config").textContent = t.llmBtnConfig;
   }
 
+  function updateScenarioVisibility() {
+    const grpArea = document.getElementById("grp-area");
+    const grpCountry = document.getElementById("grp-country");
+    const grpYear = document.getElementById("grp-year");
+    const secDiag = document.getElementById("section-diagnostic");
+    const secScenario = document.getElementById("section-scenario-charts");
+    const sec5x3 = document.getElementById("section-5x3-grid");
+
+    if (STATE.scenario === "global") {
+      // Escenario 1: Contexto Global (Área fija, compara países)
+      if (grpArea) grpArea.style.display = "";
+      if (grpCountry) grpCountry.style.display = "none";
+      if (grpYear) grpYear.style.display = "";
+      if (secDiag) secDiag.style.display = "block";
+      if (secScenario) secScenario.style.display = "block";
+      if (sec5x3) sec5x3.style.display = "none";
+    } else if (STATE.scenario === "local") {
+      // Escenario 2: Contexto Local (País fijo, compara áreas)
+      if (grpArea) grpArea.style.display = "none";
+      if (grpCountry) grpCountry.style.display = "";
+      if (grpYear) grpYear.style.display = "";
+      if (secDiag) secDiag.style.display = "block";
+      if (secScenario) secScenario.style.display = "block";
+      if (sec5x3) sec5x3.style.display = "none";
+    } else if (STATE.scenario === "evolution") {
+      // Escenario 3: Perfil Longitudinal (País × Área, 1980–2024)
+      if (grpArea) grpArea.style.display = "";
+      if (grpCountry) grpCountry.style.display = "";
+      if (grpYear) grpYear.style.display = "none";
+      if (secDiag) secDiag.style.display = "none";
+      if (secScenario) secScenario.style.display = "none";
+      if (sec5x3) sec5x3.style.display = "block";
+    }
+  }
+
   function renderAll() {
     updateStaticLabels();
+    updateScenarioVisibility();
     const t = window.I18N[STATE.lang] || window.I18N.en;
     const prevYear = STATE.refYear > 1980 ? STATE.refYear - 1 : STATE.refYear;
 
-    // Determine active scenario for diagnostic box (if in evolution mode, show country + area diagnostic)
-    const diagMode = STATE.scenario === "local" ? "local" : "global";
-
-    if (diagMode === "global") {
+    if (STATE.scenario === "global") {
       const rowsCurr = buildScenario1Rows(STATE.taxLevel, STATE.selectedArea, STATE.refYear);
       const rowsPrev = buildScenario1Rows(STATE.taxLevel, STATE.selectedArea, prevYear);
       const corrCurr = computeCorrelationBundle(rowsCurr);
@@ -507,7 +621,8 @@
         { nUnits: corrCurr.n }
       );
       renderDiagnosticBox(diag, corrCurr, corrPrev, prevYear);
-    } else {
+      renderScenarioChartsAndTables();
+    } else if (STATE.scenario === "local") {
       const rowsCurr = buildScenario2Rows(STATE.taxLevel, STATE.selectedCountry, STATE.refYear);
       const rowsPrev = buildScenario2Rows(STATE.taxLevel, STATE.selectedCountry, prevYear);
       const corrCurr = computeCorrelationBundle(rowsCurr);
@@ -530,22 +645,14 @@
         { nUnits: corrCurr.n, countryTotal: cTotal }
       );
       renderDiagnosticBox(diag, corrCurr, corrPrev, prevYear);
-    }
-
-    // Show/hide main view sections
-    const secScenario = document.getElementById("section-scenario-charts");
-    const sec5x3 = document.getElementById("section-5x3-grid");
-
-    if (STATE.scenario === "evolution") {
-      secScenario.style.display = "none";
-      sec5x3.style.display = "block";
-      render5x3Grid();
-    } else {
-      secScenario.style.display = "block";
-      sec5x3.style.display = "block"; // Also keep 5x3 below for immediate inspection!
       renderScenarioChartsAndTables();
+    } else if (STATE.scenario === "evolution") {
       render5x3Grid();
     }
+
+    setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 50);
   }
 
   function renderDiagnosticBox(diag, corrCurr, corrPrev, prevYear) {
@@ -562,37 +669,41 @@
         <span class="formula-pill">F-measure = 2·DShareC·CShareD / (DShareC + CShareD)</span>
       </div>
     `;
+    renderMath(contentEl);
 
     const metricsEl = document.getElementById("diagnostic-metrics");
+    const t = window.I18N[STATE.lang] || window.I18N.en;
+    const corrWord = t.corrWord || (STATE.lang === "es" ? "Correlación" : "Correlation");
+    const spearmanLbl = t.spearmanLabel || "Spearman (ρ)";
+    const pearsonLbl = t.pearsonLabel || "Pearson (r)";
+    const prevLbl = t.prevYearLabel ? t.prevYearLabel(prevYear) : `Prev. (${prevYear}, ρ):`;
+
+    function buildCorrCard(pairName, rhoVal, rVal, prevRhoVal) {
+      return `
+        <div class="corr-stat-card">
+          <div class="stat-label">
+            <span class="stat-prefix">${corrWord}:</span>
+            <span class="stat-pair">${pairName} (${STATE.refYear})</span>
+          </div>
+          <div class="stat-values">
+            <div class="corr-main-block">
+              <span class="corr-type-label">${spearmanLbl}</span>
+              <span class="val-main">${fmt(rhoVal)}</span>
+            </div>
+            <div class="corr-sub-block">
+              <div class="corr-sub-line"><span class="corr-type-sub">${pearsonLbl}:</span> <span class="val-sub-num">${fmt(rVal)}</span></div>
+              <div class="corr-sub-line"><span class="corr-type-sub">${prevLbl}</span> <span class="val-sub-num">${fmt(prevRhoVal)}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     metricsEl.innerHTML = `
-      <div class="corr-stat-card">
-        <div class="stat-label">AI vs. DShareC (${STATE.refYear})</div>
-        <div class="stat-values">
-          <span class="val-main">ρ = ${fmt(corrCurr.spearman.AI_DShareC)}</span>
-          <span class="val-sub">r = ${fmt(corrCurr.pearson.AI_DShareC)} | ${prevYear}: ${fmt(corrPrev.spearman.AI_DShareC)}</span>
-        </div>
-      </div>
-      <div class="corr-stat-card">
-        <div class="stat-label">AI vs. CShareD (${STATE.refYear})</div>
-        <div class="stat-values">
-          <span class="val-main">ρ = ${fmt(corrCurr.spearman.AI_CShareD)}</span>
-          <span class="val-sub">r = ${fmt(corrCurr.pearson.AI_CShareD)} | ${prevYear}: ${fmt(corrPrev.spearman.AI_CShareD)}</span>
-        </div>
-      </div>
-      <div class="corr-stat-card">
-        <div class="stat-label">F-measure vs. DShareC (${STATE.refYear})</div>
-        <div class="stat-values">
-          <span class="val-main">ρ = ${fmt(corrCurr.spearman.FM_DShareC)}</span>
-          <span class="val-sub">r = ${fmt(corrCurr.pearson.FM_DShareC)} | ${prevYear}: ${fmt(corrPrev.spearman.FM_DShareC)}</span>
-        </div>
-      </div>
-      <div class="corr-stat-card">
-        <div class="stat-label">F-measure vs. CShareD (${STATE.refYear})</div>
-        <div class="stat-values">
-          <span class="val-main">ρ = ${fmt(corrCurr.spearman.FM_CShareD)}</span>
-          <span class="val-sub">r = ${fmt(corrCurr.pearson.FM_CShareD)} | ${prevYear}: ${fmt(corrPrev.spearman.FM_CShareD)}</span>
-        </div>
-      </div>
+      ${buildCorrCard("AI vs. DShareC", corrCurr.spearman.AI_DShareC, corrCurr.pearson.AI_DShareC, corrPrev.spearman.AI_DShareC)}
+      ${buildCorrCard("AI vs. CShareD", corrCurr.spearman.AI_CShareD, corrCurr.pearson.AI_CShareD, corrPrev.spearman.AI_CShareD)}
+      ${buildCorrCard("F-measure vs. DShareC", corrCurr.spearman.FM_DShareC, corrCurr.pearson.FM_DShareC, corrPrev.spearman.FM_DShareC)}
+      ${buildCorrCard("F-measure vs. CShareD", corrCurr.spearman.FM_CShareD, corrCurr.pearson.FM_CShareD, corrPrev.spearman.FM_CShareD)}
     `;
   }
 
@@ -628,10 +739,86 @@
       traceScatter.hovertext = rows.map(r => `${r.label}<br>Docs: ${r.Output.toLocaleString()}<br>DShareC: ${(r.DShareC*100).toFixed(2)}%<br>CShareD: ${(r.CShareD*100).toFixed(2)}%<br>AI: ${r.AI.toFixed(3)}<br>F-measure: ${r.FMeasure.toFixed(4)}`);
       traceScatter.hoverinfo = "text";
 
+      // Dotted lines and annotations for Medians in Bivariate Space
+      const validD = rows.map(r => r.DShareC).filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+      const validC = rows.map(r => r.CShareD).filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+      const medDShareC = median(validD);
+      const medCShareD = median(validC);
+
+      const shapesGlobal = [];
+      const annotationsGlobal = [];
+      const lblMed = STATE.lang === "es" ? "Mediana" : (STATE.lang === "pt" ? "Mediana" : "Median");
+
+      if (medDShareC > 0) {
+        shapesGlobal.push({
+          type: "line",
+          xref: "x",
+          yref: "paper",
+          x0: medDShareC,
+          x1: medDShareC,
+          y0: 0,
+          y1: 1,
+          line: {
+            color: "#64748b",
+            width: 1.5,
+            dash: "dot"
+          }
+        });
+        annotationsGlobal.push({
+          xref: "x",
+          yref: "paper",
+          x: medDShareC,
+          y: 1,
+          xanchor: "left",
+          yanchor: "top",
+          text: `<b>${lblMed} DShareC</b>: ${(medDShareC * 100).toFixed(2)}%`,
+          showarrow: false,
+          font: { size: 9.5, color: "#334155" },
+          bgcolor: "rgba(255, 255, 255, 0.88)",
+          bordercolor: "#94a3b8",
+          borderwidth: 1,
+          borderpad: 2
+        });
+      }
+
+      if (medCShareD > 0) {
+        shapesGlobal.push({
+          type: "line",
+          xref: "paper",
+          yref: "y",
+          x0: 0,
+          x1: 1,
+          y0: medCShareD,
+          y1: medCShareD,
+          line: {
+            color: "#64748b",
+            width: 1.5,
+            dash: "dot"
+          }
+        });
+        annotationsGlobal.push({
+          xref: "paper",
+          yref: "y",
+          x: 1,
+          y: medCShareD,
+          xanchor: "right",
+          yanchor: "bottom",
+          text: `<b>${lblMed} CShareD</b>: ${(medCShareD * 100).toFixed(3)}%`,
+          showarrow: false,
+          font: { size: 9.5, color: "#334155" },
+          bgcolor: "rgba(255, 255, 255, 0.88)",
+          bordercolor: "#94a3b8",
+          borderwidth: 1,
+          borderpad: 2
+        });
+      }
+
       Plotly.newPlot("plotly-scenario-left", [traceScatter], {
-        margin: { t: 25, r: 20, b: 50, l: 60 },
+        margin: { t: 30, r: 25, b: 50, l: 60 },
         xaxis: { title: "DShareC (Domain Share in Country = Ocd / Oc)", zeroline: false },
         yaxis: { title: "CShareD (Country Share in Domain = Ocd / Owd)", type: "log", zeroline: false },
+        shapes: shapesGlobal,
+        annotations: annotationsGlobal,
         height: 390,
         paper_bgcolor: "transparent",
         plot_bgcolor: "#ffffff"
@@ -697,10 +884,78 @@
         },
         type: "scatter"
       };
+      // Dotted lines and annotations for Medians in Bivariate Space (Local)
+      const validDLocal = rows.map(r => r.DShareC).filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+      const validCLocal = rows.map(r => r.CShareD).filter(v => typeof v === "number" && !isNaN(v) && v > 0);
+      const medDLocal = median(validDLocal);
+      const medCLocal = median(validCLocal);
+
+      const shapesLocal = [];
+      const annotationsLocal = [];
+      const lblMedLocal = STATE.lang === "es" ? "Mediana" : (STATE.lang === "pt" ? "Mediana" : "Median");
+
+      if (medDLocal > 0) {
+        shapesLocal.push({
+          type: "line",
+          xref: "x",
+          yref: "paper",
+          x0: medDLocal,
+          x1: medDLocal,
+          y0: 0,
+          y1: 1,
+          line: { color: "#64748b", width: 1.5, dash: "dot" }
+        });
+        annotationsLocal.push({
+          xref: "x",
+          yref: "paper",
+          x: medDLocal,
+          y: 1,
+          xanchor: "left",
+          yanchor: "top",
+          text: `<b>${lblMedLocal} DShareC</b>: ${(medDLocal * 100).toFixed(2)}%`,
+          showarrow: false,
+          font: { size: 9.5, color: "#334155" },
+          bgcolor: "rgba(255, 255, 255, 0.88)",
+          bordercolor: "#94a3b8",
+          borderwidth: 1,
+          borderpad: 2
+        });
+      }
+
+      if (medCLocal > 0) {
+        shapesLocal.push({
+          type: "line",
+          xref: "paper",
+          yref: "y",
+          x0: 0,
+          x1: 1,
+          y0: medCLocal,
+          y1: medCLocal,
+          line: { color: "#64748b", width: 1.5, dash: "dot" }
+        });
+        annotationsLocal.push({
+          xref: "paper",
+          yref: "y",
+          x: 1,
+          y: medCLocal,
+          xanchor: "right",
+          yanchor: "bottom",
+          text: `<b>${lblMedLocal} CShareD</b>: ${(medCLocal * 100).toFixed(3)}%`,
+          showarrow: false,
+          font: { size: 9.5, color: "#334155" },
+          bgcolor: "rgba(255, 255, 255, 0.88)",
+          bordercolor: "#94a3b8",
+          borderwidth: 1,
+          borderpad: 2
+        });
+      }
+
       Plotly.newPlot("plotly-scenario-left", [traceScatter], {
-        margin: { t: 25, r: 20, b: 50, l: 60 },
+        margin: { t: 30, r: 25, b: 50, l: 60 },
         xaxis: { title: "DShareC (Domestic Priority = Ocd / Oc)" },
         yaxis: { title: "CShareD (Global Domain Share = Ocd / Owd)" },
+        shapes: shapesLocal,
+        annotations: annotationsLocal,
         height: 390,
         paper_bgcolor: "transparent",
         plot_bgcolor: "#ffffff"
@@ -763,7 +1018,10 @@
       });
 
       tr.innerHTML = `
-        <td>${idx + 1}. ${r.label}</td>
+        <td>
+          ${idx + 1}. ${r.label}
+          <button type="button" class="btn-table-jump" data-id="${r.id}" title="Ver cuadrícula 5×3 de evolución">5×3 ↗</button>
+        </td>
         <td>${r.Output.toLocaleString()}</td>
         <td>${fmt(r.DShareC, 4)}</td>
         <td>${fmt(r.CShareD, 4)}</td>
@@ -774,6 +1032,27 @@
         <td>${fmt(r.GMeasure, 4)}</td>
         <td>${fmt(r.GAggregation, 4)}</td>
       `;
+
+      const jumpBtn = tr.querySelector(".btn-table-jump");
+      if (jumpBtn) {
+        jumpBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (STATE.scenario === "global") {
+            STATE.selectedCountry = r.id;
+            const sc = document.getElementById("select-country");
+            if (sc) sc.value = r.id;
+          } else {
+            STATE.selectedArea = r.id;
+            const sa = document.getElementById("select-area");
+            if (sa) sa.value = r.id;
+          }
+          STATE.scenario = "evolution";
+          document.querySelectorAll(".scenario-tab").forEach(tab => {
+            tab.classList.toggle("active", tab.dataset.scenario === "evolution");
+          });
+          renderAll();
+        });
+      }
       tbody.appendChild(tr);
     });
   }
@@ -784,7 +1063,12 @@
     const cName = getCountryName(STATE.selectedCountry);
     const areaName = STATE.selectedArea;
 
-    document.getElementById("grid-5x3-title").textContent = `${t.grid5x3Title}: ${cName} — ${areaName}`;
+    const base = getActiveBaseData();
+    const startYear = base && base.years && base.years.length > 0 ? base.years[0] : 1980;
+    const endYear = base && base.years && base.years.length > 0 ? base.years[base.years.length - 1] : 2025;
+    const yearRange = `${startYear}–${endYear}`;
+    const dynamicTitle = (t.grid5x3Title || "").replace(/1980[–-]2024/g, yearRange);
+    document.getElementById("grid-5x3-title").textContent = `${dynamicTitle}: ${cName} — ${areaName}`;
     document.getElementById("grid-5x3-subtitle").textContent = t.grid5x3Subtitle;
 
     const series = buildTimeSeriesFor5x3(STATE.taxLevel, STATE.selectedCountry, areaName);
@@ -906,8 +1190,57 @@
         s.AI, s.RSI, s.FMeasure, s.AMeasure, s.GMeasure, s.GAggregation
       ].join(","));
     }
+    const base = getActiveBaseData();
+    const startYear = base && base.years && base.years.length > 0 ? base.years[0] : 1980;
+    const endYear = base && base.years && base.years.length > 0 ? base.years[base.years.length - 1] : 2025;
     const safeArea = STATE.selectedArea.replace(/[^a-zA-Z0-9_-]/g, "_");
-    triggerCSVDownload(`OpenAlex_5x3_${STATE.selectedCountry}_${safeArea}_1980_2024.csv`, lines.join("\n"));
+    triggerCSVDownload(`OpenAlex_5x3_${STATE.selectedCountry}_${safeArea}_${startYear}_${endYear}.csv`, lines.join("\n"));
+  }
+
+  function downloadLongitudinalMatrixCSV() {
+    const base = getActiveBaseData();
+    if (!base) return;
+    const years = base.years || [];
+    const level = STATE.taxLevel;
+    const areas = getAreasForLevel(level);
+
+    let countries = [];
+    if (level === "subfields" && STATE.datasets.subfields) {
+      const dict = STATE.docType === "citable"
+        ? (STATE.datasets.subfields.units_subfields_citable || STATE.datasets.subfields.units_subfields_full)
+        : STATE.datasets.subfields.units_subfields_full;
+      countries = dict ? Object.keys(dict).sort() : [];
+    } else {
+      countries = Object.keys(base.units_fields || base.units_total || {}).sort();
+    }
+
+    if (countries.length === 0 || areas.length === 0 || years.length === 0) {
+      alert("No data available to export longitudinal matrix.");
+      return;
+    }
+
+    // CSV header: ID followed by each area name
+    const headers = ["ID", ...areas.map(a => `"${String(a).replace(/"/g, '""')}"`)];
+    const lines = [headers.join(",")];
+
+    for (const cc of countries) {
+      const areaSeries = areas.map(a => getCountryAreaSeries(level, cc, a));
+      for (let yIdx = 0; yIdx < years.length; yIdx++) {
+        const yr = years[yIdx];
+        const rowId = `${yr}_${cc}`;
+        const rowVals = [rowId];
+        for (let aIdx = 0; aIdx < areas.length; aIdx++) {
+          const s = areaSeries[aIdx];
+          rowVals.push((s && s[yIdx] !== undefined) ? s[yIdx] : 0);
+        }
+        lines.push(rowVals.join(","));
+      }
+    }
+
+    const startYear = years[0];
+    const endYear = years[years.length - 1];
+    const filename = `OpenAlex_Matrix_Longitudinal_${level}_${STATE.docType}_${startYear}_${endYear}.csv`;
+    triggerCSVDownload(filename, lines.join("\n"));
   }
 
   function downloadCurrentScenarioCSV() {
@@ -1054,7 +1387,8 @@ Provide a concise 2-paragraph methodological interpretation comparing this area 
       if (resp.ok) {
         const resData = await resp.json();
         if (resData.ok) {
-          outBox.textContent = resData.response;
+          outBox.innerHTML = escapeHtml(resData.response).replace(/\n/g, "<br>");
+          renderMath(outBox);
           return;
         }
       }
@@ -1082,7 +1416,9 @@ Provide a concise 2-paragraph methodological interpretation comparing this area 
       });
       if (directResp.ok) {
         const dJson = await directResp.json();
-        outBox.textContent = dJson.choices[0].message.content;
+        const content = (dJson.choices && dJson.choices[0] && dJson.choices[0].message) ? dJson.choices[0].message.content : "";
+        outBox.innerHTML = escapeHtml(content).replace(/\n/g, "<br>");
+        renderMath(outBox);
         return;
       } else {
         const errTxt = await directResp.text();

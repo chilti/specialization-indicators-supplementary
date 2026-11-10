@@ -27,10 +27,22 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+    if _env_path.exists():
+        load_dotenv(_env_path)
+    else:
+        load_dotenv()
+except ImportError:
+    pass
+
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_LLM_URL = os.environ.get("LLM_BASE_URL", "https://dinamica1.fciencias.unam.mx/v1")
 DEFAULT_LLM_KEY = os.environ.get("LLM_API_KEY", "")
 DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "openai/default")
+DEFAULT_PORT = int(os.environ.get("APP_PORT", "8080"))
+DEFAULT_HOST = os.environ.get("APP_HOST", "0.0.0.0")
 
 
 class DinamicaHandler(http.server.SimpleHTTPRequestHandler):
@@ -154,8 +166,8 @@ class DinamicaHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser(description="Servidor para dinamica1 con conexión a LM Studio")
-    parser.add_argument("--host", default="0.0.0.0", help="Host a escuchar (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8080, help="Puerto HTTP (default: 8080)")
+    parser.add_argument("--host", default=DEFAULT_HOST, help=f"Host a escuchar (default: {DEFAULT_HOST})")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"Puerto HTTP (default: {DEFAULT_PORT})")
     parser.add_argument("--llm-url", default=DEFAULT_LLM_URL, help="URL base de LM Studio (default: https://dinamica1.fciencias.unam.mx/v1)")
     parser.add_argument("--llm-key", default=DEFAULT_LLM_KEY, help="API Key de LM Studio (o variable LLM_API_KEY)")
     parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL, help="Modelo en LM Studio (default: openai/default)")

@@ -9,7 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';" />
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script defer src="vendor/katex/katex.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';"></script>
+  <script defer src="vendor/katex/contrib/auto-render.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js';"></script>
 </head>
 <body>
   <!-- Sticky Header -->
@@ -51,15 +54,15 @@
 
     <!-- Filter & Parameter Control Bar -->
     <section class="control-bar" aria-label="Parameters">
-      <div class="control-group">
+      <div class="control-group" id="grp-doctype">
         <label for="select-doctype" id="lbl-doctype">Conjunto de Documentos</label>
         <select id="select-doctype">
+          <option value="citable" id="opt-doc-citable" selected>Documentos Citables (Artículos, Reviews, Letters)</option>
           <option value="all" id="opt-doc-all">Todos los Documentos (Producción Total)</option>
-          <option value="citable" id="opt-doc-citable">Documentos Citables (Artículos, Reviews, Letters)</option>
         </select>
       </div>
 
-      <div class="control-group">
+      <div class="control-group" id="grp-level">
         <label for="select-level" id="lbl-level">Nivel de Clasificación de OpenAlex</label>
         <select id="select-level">
           <option value="domains" id="opt-lvl-domains">Nivel 1: Dominios (4 macroáreas)</option>
@@ -68,24 +71,24 @@
         </select>
       </div>
 
-      <div class="control-group">
+      <div class="control-group" id="grp-area">
         <label for="select-area" id="lbl-area">Dominio / Campo / Subcampo de Investigación</label>
         <select id="select-area"></select>
       </div>
 
-      <div class="control-group">
+      <div class="control-group" id="grp-country">
         <label for="select-country" id="lbl-country">País / Economía</label>
         <select id="select-country"></select>
       </div>
 
-      <div class="control-group">
+      <div class="control-group" id="grp-year">
         <label for="select-year" id="lbl-year">Año de Referencia (Año Anterior Completo)</label>
         <select id="select-year"></select>
       </div>
     </section>
 
     <!-- Methodological Criterion & Diagnostic Card -->
-    <section class="diagnostic-box" aria-labelledby="diag-header-title">
+    <section class="diagnostic-box" id="section-diagnostic" aria-labelledby="diag-header-title">
       <div class="card-header" style="border-bottom-color: #bfdbfe;">
         <div>
           <h2 class="card-title" id="diag-header-title">Criterio Metodológico del Artículo</h2>
@@ -107,8 +110,72 @@
         </div>
       </div>
 
+      <!-- Methodological References & Article Citations -->
+      <div class="diagnostic-references" id="diagnostic-references">
+        <div class="ref-header">
+          <strong id="lbl-references-title">Referencias Metodológicas y Cita del Artículo</strong>
+        </div>
+
+        <div class="ref-list">
+          <!-- Main Article Citation -->
+          <div class="ref-item ref-item-main">
+            <div class="ref-badge" id="lbl-ref-main-badge">Artículo Principal</div>
+            <div class="ref-text">
+              <strong>Jiménez-Andrade, J. L., Arencibia-Jorge, R., & Carrillo-Calvet, H. (2026).</strong> 
+              <em>Specialization indicators in scientometrics: Understanding the Activity Index and the F-measure through their underlying components</em>. 
+              <strong>Journal of Informetrics</strong>, Volume 20, Issue 4, 101880. ISSN 1751-1577.
+            </div>
+            <div class="ref-links">
+              <a href="https://doi.org/10.1016/j.joi.2026.101880" target="_blank" rel="noopener noreferrer" class="ref-link-pill">
+                DOI: 10.1016/j.joi.2026.101880 ↗
+              </a>
+              <a href="https://www.sciencedirect.com/science/article/pii/S1751157726001148" target="_blank" rel="noopener noreferrer" class="ref-link-pill">
+                ScienceDirect Full Text ↗
+              </a>
+            </div>
+            <details class="ref-abstract-details">
+              <summary class="ref-abstract-summary" id="lbl-ref-abstract-summary">Ver Resumen (Abstract) y Palabras Clave</summary>
+              <div class="ref-abstract-body">
+                <p><strong>Abstract:</strong> This study provides a conceptual and analytical clarification of the Activity Index (AI) and the F-measure by identifying the structural relationships with their underlying share components and explaining their context-dependent properties. We conduct both an algebraic and empirical analysis of the relation among these indicators in two analytical contexts: Countries Specialization Comparison (comparing the specialization of multiple countries within a fixed domain) and Domains Comparison (comparing specialization across multiple domains within a fixed country). To examine the indicators’ dependencies, we compute Pearson and Spearman correlation coefficients between the indicators and their underlying share components, DShareC (a domain’s share of a country’s output) and CShareD (a country’s share of world output in that domain), using bibliometric data from InCites and OpenAlex covering &gt;200 countries across 22 and 26 research fields over the period 1980–2024. We show that the AI and the F-measure exhibit a mirrored asymmetrical association with their underlying share components across the two analytical contexts. For Countries Comparison, the AI is rank-equivalent to DShareC for comparing countries within a fixed domain, whereas the F-measure operates as a proxy for CShareD. In the Domains Comparison, this pattern reverses: the AI becomes rank-equivalent to CShareD for comparing domains within a fixed country, whereas the F-measure is modulated by the volume of national output, correlating with DShareC in high-output countries and with CShareD in low-output countries. These findings clarify that the interpretation of specialization indicators depends on the analytical context in which they are applied. These results provide a conceptual framework for interpreting specialization indicators in scientometric evaluations and clear criteria for indicator selection, distinguishing between measures of internal research prioritization and global participation in scientific output.</p>
+                <div class="ref-keywords">
+                  <strong>Keywords:</strong> 
+                  <span class="kw-tag">Scientometrics</span>
+                  <span class="kw-tag">Research specialization</span>
+                  <span class="kw-tag">Specialization indicators</span>
+                  <span class="kw-tag">Activity index</span>
+                  <span class="kw-tag">F-measure</span>
+                  <span class="kw-tag">Bibliometric indicators</span>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- Foundational Citations Subgrid -->
+          <div class="ref-subgrid">
+            <div class="ref-item">
+              <div class="ref-sub-title" id="lbl-ref-f-sub">F-measure para prioridad científica:</div>
+              <div class="ref-text">
+                <a href="https://www.sciencedirect.com/science/article/pii/S1751157726001148#bbib0017" target="_blank" rel="noopener noreferrer"><strong>[Rousseau, 2018]</strong></a> 
+                Rousseau, R. <em>The F-measure for research priority</em>. <strong>Journal of Data and Information Science</strong>, 3(1) (2018), pp. 1–18.
+              </div>
+              <div class="ref-links">
+                <a href="https://doi.org/10.2478/jdis-2018-0001" target="_blank" rel="noopener noreferrer" class="ref-link-pill">DOI: 10.2478/jdis-2018-0001 ↗</a>
+              </div>
+            </div>
+
+            <div class="ref-item">
+              <div class="ref-sub-title" id="lbl-ref-ai-sub">Índice de Actividad (AI) en América Latina y el Caribe:</div>
+              <div class="ref-text">
+                <a href="https://www.sciencedirect.com/science/article/pii/S1751157726001148#bbib0003" target="_blank" rel="noopener noreferrer"><strong>[Frame, 1977]</strong></a> 
+                Frame, J. D. <em>Mainstream research in Latin America and the Caribbean</em>. <strong>Interciencia</strong>, 2(3) (1977), pp. 143–148.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Optional Local LLM Interpreter Panel (dinamica1 LM Studio) -->
-      <div class="llm-panel">
+      <div class="llm-panel" id="llm-panel" style="display: none;">
         <div class="llm-header">
           <div>
             <strong id="llm-panel-title">Intérprete Metodológico con IA (Modelo Local en dinamica1)</strong>
@@ -189,6 +256,10 @@
         <div>
           <h2 class="card-title" id="grid-5x3-title">Cuadrícula 5×3 de Evolución Longitudinal (1980–2024)</h2>
           <p class="card-subtitle" id="grid-5x3-subtitle">F-measure = Media armónica de DShareC y CShareD | A-measure = Media aritmética | G-measure = Media geométrica | GAggregation = √DShareC + √CShareD</p>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" id="btn-dl-series-grid">Descargar Series 5×3 (CSV)</button>
+          <button type="button" class="btn btn-outline" id="btn-dl-matrix-grid">Descargar Matriz Longitudinal Países × Áreas (CSV)</button>
         </div>
       </div>
       <div id="plotly-5x3-grid" class="chart-5x3-box"></div>

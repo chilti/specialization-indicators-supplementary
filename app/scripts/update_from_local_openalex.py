@@ -35,7 +35,18 @@ import math
 import os
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Dict, List
+
+try:
+    from dotenv import load_dotenv
+    _env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+    if os.path.exists(_env_path):
+        load_dotenv(_env_path)
+    else:
+        load_dotenv()
+except ImportError:
+    pass
 
 
 def run_clickhouse_query(ch_url: str, sql: str, user: str = "default", password: str = "") -> List[dict]:
@@ -46,7 +57,7 @@ def run_clickhouse_query(ch_url: str, sql: str, user: str = "default", password:
         params["password"] = password
     url = f"{ch_url.rstrip('/')}/?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, data=full_sql.encode("utf-8"), method="POST")
-    with urllib.request.urlopen(req, timeout=300) as resp:
+    with urllib.request.urlopen(req, timeout=900) as resp:
         lines = resp.read().decode("utf-8").splitlines()
         return [json.loads(line) for line in lines if line.strip()]
 
@@ -247,12 +258,13 @@ def update_from_clickhouse(ch_url: str, user: str, password: str, start_year: in
 
 
 def main():
+    default_end_year = int(os.environ.get("END_YEAR", datetime.now().year - 1))
     parser = argparse.ArgumentParser(description="Actualizador ClickHouse (rag.works_flat) -> App JSON Data")
     parser.add_argument("--ch-url", default=os.environ.get("CLICKHOUSE_URL", "http://localhost:8123"), help="URL HTTP de ClickHouse")
     parser.add_argument("--ch-user", default=os.environ.get("CLICKHOUSE_USER", "default"), help="Usuario de ClickHouse")
     parser.add_argument("--ch-password", default=os.environ.get("CLICKHOUSE_PASSWORD", ""), help="Password de ClickHouse")
     parser.add_argument("--start-year", type=int, default=1980, help="Año inicial")
-    parser.add_argument("--end-year", type=int, default=2024, help="Año final completo")
+    parser.add_argument("--end-year", type=int, default=default_end_year, help=f"Año final completo (default: año anterior al actual, {default_end_year})")
     parser.add_argument("--out-dir", default=os.path.join(os.path.dirname(__file__), "..", "data"), help="Carpeta de salida")
     parser.add_argument("--print-sql", action="store_true", help="Imprimir las consultas ClickHouse y salir")
     args = parser.parse_args()
